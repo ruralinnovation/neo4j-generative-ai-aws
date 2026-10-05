@@ -14,3 +14,6 @@ __pycache__
 # UI file
 .env
 secrets.toml
+
+.claude/
+CLAUDE.md
