@@ -11,6 +11,7 @@ langchain-openai>=1.2.1
 langchain-google-genai>=0.1.0
 langgraph==1.2.11
 langgraph-checkpoint==4.2.0
+langchain-neo4j @ git+https://github.com/ruralinnovation/langchain-neo4j.git@development#subdirectory=libs/neo4j
 numpy
 pandas
 pillow

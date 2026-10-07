@@ -189,7 +189,7 @@ set_neo4j_conf dbms.security.procedures.unrestricted 'apoc.meta.data'
 set_neo4j_conf server.default_listen_address 0.0.0.0
 set_neo4j_conf server.bolt.listen_address 0.0.0.0:7687
 set_neo4j_conf server.http.listen_address 0.0.0.0:7474
-set_neo4j_conf internal.dbms.cypher_ip_blocklist "10.0.0.0/8,100.64.0.0/10,172.16.0.0/12,192.168.0.0/16,169.254.169.0/24,fc00::/7,fe80::/10,ff00::/8"
+set_neo4j_conf internal.dbms.cypher_ip_blocklist "10.0.0.0/8,100.64.0.0/10,172.16.0.0/13,172.24.0.0/14,172.28.0.0/15,172.30.0.0/20,172.30.16.0/22,172.30.21.0/24,172.30.22.0/23,172.30.24.0/21,172.30.32.0/19,172.30.64.0/18,172.30.128.0/17,172.31.0.0/16,192.168.0.0/16,169.254.169.0/24,fc00::/7,fe80::/10,ff00::/8"
 
 # 8. APOC core and the GenAI plugin ship with the package; activate them (the bake fails if a jar isn't found)
 cp /var/lib/neo4j/labs/apoc-*-core.jar /var/lib/neo4j/plugins/ || \
