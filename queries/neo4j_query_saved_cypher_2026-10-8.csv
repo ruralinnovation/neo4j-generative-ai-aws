@@ -708,8 +708,12 @@ RETURN p
 ",21,13,false,false
 Create Movie,,"CREATE (m:Movie {title:""Spider-Man: Across the Spider-Verse"", released:2023, tagline:""I never found the right band to join. So I started my own... You want in?""})
 RETURN m",22,13,false,false
-Create relationship,,"MATCH (p:Person {name:""Hailee Steinfeld""}), (m:Movie {title:""Spider-Man: Across the Spider-Verse""})
-MERGE (p)-[hasRelationship:ACTED_IN]->(m)
+Create relationship,,"MATCH (p:Person {name:""Hailee Steinfeld""})
+CALL (p) {
+  MATCH (m:Movie {title:""Spider-Man: Across the Spider-Verse""})
+  MERGE (p)-[hasRelationship:ACTED_IN]->(m)
+  RETURN m, hasRelationship
+}
 RETURN p, hasRelationship, m",23,13,false,false
 Delete relationship,,"MATCH (emil:Person {name:""Emil Eifrem""})-[actedIn:ACTED_IN]->(movie:Movie)
 DELETE actedIn",24,13,false,false
