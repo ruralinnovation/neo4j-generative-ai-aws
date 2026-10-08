@@ -185,7 +185,7 @@ systemctl stop neo4j || true
 rm -rf /var/lib/neo4j/data/*
 
 # 7. Static neo4j.conf settings (UserData adds the advertised addresses and the memory settings)
-set_neo4j_conf dbms.security.procedures.unrestricted 'apoc.meta.data'
+set_neo4j_conf dbms.security.procedures.unrestricted 'apoc.meta.data,apoc.nodes.link'
 set_neo4j_conf server.default_listen_address 0.0.0.0
 set_neo4j_conf server.bolt.listen_address 0.0.0.0:7687
 set_neo4j_conf server.http.listen_address 0.0.0.0:7474
