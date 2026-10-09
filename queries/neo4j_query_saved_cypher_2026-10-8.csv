@@ -686,34 +686,49 @@ MATCH path=shortestPath(
    WHERE n <> kevin
 RETURN path, length(path) / 2 as distance",12,1,false,false
 DeepLearning.AI,,,13,,true,false
-Match all nodes in the graph,,"  MATCH (n) 
-  RETURN count(n)",14,13,false,false
-Match all nodes in the graph (AS),,"  MATCH (n) 
-  RETURN count(n) AS numberOfNodes",15,13,false,false
-Match only the Movie nodes,,"  MATCH (m:Movie) 
-  RETURN count(m) AS numberOfMovies",16,13,false,false
-Match only the Person nodes,,"  MATCH (people:Person) 
-  RETURN count(people) AS numberOfPeople",17,13,false,false
-Pattern matching with multiple nodes,,"  MATCH (actor:Person)-[:ACTED_IN]->(movie:Movie) 
-  RETURN actor.name, movie // LIMIT 10",18,13,false,false
-Tom Hanks movies,,"  MATCH (tom:Person {name: ""Tom Hanks""})-[:ACTED_IN]->(tomHanksMovies:Movie) 
-  RETURN tom.name,tomHanksMovies.title",19,13,false,false
-Tom Hanks co-actors,,"  MATCH (tom:Person {name:""Tom Hanks""})-[:ACTED_IN]->(m)<-[:ACTED_IN]-(coActors) 
-  RETURN coActors, m",20,13,false,false
+Actors & Movies,,,14,13,true,false
 Create Person,,"CREATE (p:Person {name:""Hailee Steinfeld"", born: 1996})
 RETURN p
 
 // MATCH (n:Person {name:""Hailee Steinfeld""})
 // RETURN n
-",21,13,false,false
+",15,14,false,false
 Create Movie,,"CREATE (m:Movie {title:""Spider-Man: Across the Spider-Verse"", released:2023, tagline:""I never found the right band to join. So I started my own... You want in?""})
-RETURN m",22,13,false,false
+RETURN m",16,14,false,false
+Delete relationship,,"MATCH (emil:Person {name:""Emil Eifrem""})-[actedIn:ACTED_IN]->(movie:Movie)
+DELETE actedIn",17,14,false,false
 Create relationship,,"MATCH (p:Person {name:""Hailee Steinfeld""})
 CALL (p) {
   MATCH (m:Movie {title:""Spider-Man: Across the Spider-Verse""})
   MERGE (p)-[hasRelationship:ACTED_IN]->(m)
   RETURN m, hasRelationship
 }
-RETURN p, hasRelationship, m",23,13,false,false
-Delete relationship,,"MATCH (emil:Person {name:""Emil Eifrem""})-[actedIn:ACTED_IN]->(movie:Movie)
-DELETE actedIn",24,13,false,false
+RETURN p, hasRelationship, m",18,14,false,false
+Match all nodes in the graph,,"  MATCH (n) 
+  RETURN count(n)",19,14,false,false
+Match all nodes in the graph (AS),,"  MATCH (n) 
+  RETURN count(n) AS numberOfNodes",20,14,false,false
+Match only the Movie nodes,,"  MATCH (m:Movie) 
+  RETURN count(m) AS numberOfMovies",21,14,false,false
+Match only the Person nodes,,"  MATCH (people:Person) 
+  RETURN count(people) AS numberOfPeople",22,14,false,false
+Pattern matching with multiple nodes,,"  MATCH (actor:Person)-[:ACTED_IN]->(movie:Movie) 
+  RETURN actor.name, movie // LIMIT 10",23,14,false,false
+Tom Hanks movies,,"  MATCH (tom:Person {name: ""Tom Hanks""})-[:ACTED_IN]->(tomHanksMovies:Movie) 
+  RETURN tom.name,tomHanksMovies.title",24,14,false,false
+Tom Hanks co-actors,,"  MATCH (tom:Person {name:""Tom Hanks""})-[:ACTED_IN]->(m)<-[:ACTED_IN]-(coActors) 
+  RETURN coActors, m",25,14,false,false
+SEC knowledge graph,,,26,13,true,false
+Match Chunks from Forms,,"  MATCH (c:Chunk)-[r:PART_OF]->(f:Form)
+    WHERE c.formId = f.formId
+  RETURN c, r, f",27,26,false,false
+Match next Chunk,,"MATCH (first:Chunk)-[:NEXT]->(nextChunk:Chunk)
+  WHERE first.chunkId = '0000950170-23-027948-item1-chunk0000'
+RETURN nextChunk.chunkId as chunkId, nextChunk.text as text
+
+// MATCH window=
+//     (:Chunk)-[:NEXT*0..1]->(c:Chunk)-[:NEXT*0..1]->(:Chunk)
+//   WHERE c.chunkId = '0000950170-23-027948-item1-chunk0000'
+// WITH window as longestChunkWindow
+//     ORDER BY length(window) DESC LIMIT 1
+// RETURN length(longestChunkWindow)",28,26,false,false

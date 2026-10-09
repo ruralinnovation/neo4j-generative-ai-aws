@@ -166,6 +166,12 @@ apt-get install -y "neo4j=$NEO4J_VERSION"
 apt-mark hold neo4j cypher-shell
 java -version
 
+# 3b. Redis (broker for the Aegra agent servers; configured and started by UserData, not here)
+apt-cache madison redis-server | head -5 || true
+apt-get install -y redis-server redis-tools
+apt-mark hold redis-server redis-tools
+redis-server --version
+
 # 4. AWS CLI v2 (UserData reads the admin password from Secrets Manager)
 curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o /tmp/awscliv2.zip
 unzip -q -o /tmp/awscliv2.zip -d /tmp
@@ -224,12 +230,17 @@ done
 cypher-shell -a bolt://localhost:7687 -u neo4j -p 'bake-smoke-test-1' \
   'CALL dbms.components() YIELD name, versions, edition RETURN name, versions, edition;'
 cypher-shell -a bolt://localhost:7687 -u neo4j -p 'bake-smoke-test-1' 'RETURN apoc.version() AS apoc;'
+systemctl start redis-server
+redis-cli ping
 
 # 11. Leave no database, password, logs, keys or machine identity in the image;
-#     neo4j.service stays disabled so it can't start before UserData mounts the data volume
+#     neo4j.service stays disabled so it can't start before UserData mounts the data volume,
+#     and redis-server stays disabled so it can't start before UserData writes its config
 systemctl stop neo4j
 systemctl disable neo4j
-rm -rf /var/lib/neo4j/data/* /var/log/neo4j/*
+systemctl stop redis-server
+systemctl disable redis-server
+rm -rf /var/lib/neo4j/data/* /var/log/neo4j/* /var/lib/redis/* /var/log/redis/*
 apt-get clean
 rm -f /home/ubuntu/.ssh/authorized_keys /root/.bash_history /home/ubuntu/.bash_history
 # Drop the builder's journal so the image carries none of this build's logs
@@ -246,6 +257,7 @@ nohup bash /root/bake-neo4j-ce.sh > /root/bake-neo4j-ce.log 2>&1 & tail -f /root
 When the log ends with `BAKE_COMPLETE`, look back in it for:
 - the `dbms.components()` row, showing `community` and your version
 - the `apoc.version()` result
+- the `redis-server --version` line and `PONG` from `redis-cli ping`
 
 Then press Ctrl-C and run:
 
