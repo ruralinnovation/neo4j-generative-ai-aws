@@ -1,6 +1,54 @@
 name,description,query,id,parentId,isFolder,isProtected
 Drafts,,,0,,true,true
-Movie graph,,,1,,true,false
+CORI knowledge graph,,,1,,true,false
+First County condition queries,,"// MATCH (c:Classification) 
+// RETURN count(c)
+
+// MATCH (cnt:County) 
+// RETURN count(cnt)
+
+// MATCH (cnt:County)-[r:CONDITIONS]->(c:Classification)
+// RETURN cnt, r, c
+
+// MATCH ()-[r:CONDITIONS]->()
+// DELETE r
+
+// MATCH (cnt:County {name: 'Cumberland County'})-[r:IS]->(c:Classification)
+// RETURN cnt, r, c
+
+
+// MATCH (cnt:County {name: 'Cumberland County'})-[r:WAS]->(c:Classification)
+// RETURN cnt, r, c
+
+
+// MATCH (cnt:County {name: 'Cumberland County'})-[r]->(c:Classification)
+// RETURN cnt, r, c
+
+// // This an ""OR""
+// MATCH (cnt:County)-[r]->(c:Classification)
+// WHERE c.name IN ['housing_stress', 'high_recreation']
+// RETURN cnt, r, c
+
+// // This is an ""AND""
+// MATCH (cnt:County)-[r1:IS]->(c1:Classification {name: 'housing_stress'}),
+//       (cnt)-[r2:IS]->(c2:Classification {name: 'high_recreation'})
+// RETURN cnt, r1, c1, r2, c2
+
+// MATCH (cnt:County)-[r1]->(c1:Classification {name: 'housing_stress'}),
+//       (cnt)-[r2]->(c2:Classification {name: 'high_recreation'})
+// RETURN count(cnt)
+
+// MATCH (cnt:County)-[r1:IS]->(c1:Classification {name: 'persistent_poverty'}), 
+//       (cnt:County)-[r2]->(c2:Classification)
+//       WHERE c2.name IN ['housing_stress', 'high_recreation']
+// RETURN cnt, r1, c1, r2, c2
+
+MATCH (cnt:County)-[r1:IS]->(c1:Classification {name: 'persistent_poverty'}), 
+      (cnt:County)-[r2]->(c2:Classification)
+      WHERE c2.name IN ['low_employment', 'population_loss']
+RETURN cnt, r1, c1, r2, c2
+",2,1,false,false
+Movie graph,,,3,,true,false
 Create the data,,"CREATE CONSTRAINT movie_title IF NOT EXISTS FOR (m:Movie) REQUIRE m.title IS UNIQUE;
 CREATE CONSTRAINT person_name IF NOT EXISTS FOR (p:Person) REQUIRE p.name IS UNIQUE;
 
@@ -656,25 +704,25 @@ MERGE (JessicaThompson)-[:REVIEWED {summary:'Dark, but compelling', rating:85}]-
 MERGE (JessicaThompson)-[:REVIEWED {summary:""Slapstick redeemed only by the Robin Williams and Gene Hackman's stellar performances"", rating:45}]->(TheBirdcage)
 MERGE (JessicaThompson)-[:REVIEWED {summary:'A solid romp', rating:68}]->(TheDaVinciCode)
 MERGE (JamesThompson)-[:REVIEWED {summary:'Fun, but a little far fetched', rating:65}]->(TheDaVinciCode)
-MERGE (JessicaThompson)-[:REVIEWED {summary:'You had me at Jerry', rating:92}]->(JerryMaguire);",2,1,false,false
+MERGE (JessicaThompson)-[:REVIEWED {summary:'You had me at Jerry', rating:92}]->(JerryMaguire);",4,3,false,false
 First query,,"MATCH (person:Person {name: 'Tom Hanks'})
 MATCH path = (person)-[:ACTED_IN]->(m)<-[:DIRECTED]-(d)
-RETURN path;",3,1,false,false
-Show Indexes,,SHOW INDEXES,4,1,false,false
-Index Movie released year,,CREATE INDEX movie_released IF NOT EXISTS FOR (m:Movie) ON (m.released),5,1,false,false
-Index Person born year,,CREATE INDEX person_born IF NOT EXISTS FOR (p:Person) ON (p.born),6,1,false,false
+RETURN path;",5,3,false,false
+Show Indexes,,SHOW INDEXES,6,3,false,false
+Index Movie released year,,CREATE INDEX movie_released IF NOT EXISTS FOR (m:Movie) ON (m.released),7,3,false,false
+Index Person born year,,CREATE INDEX person_born IF NOT EXISTS FOR (p:Person) ON (p.born),8,3,false,false
 Find Person named Tom Hanks,,"MATCH (p:Person {name: ""Tom Hanks""})
-RETURN p",7,1,false,false
+RETURN p",9,3,false,false
 Find Movie titled Cloud Atlas,,"MATCH (x:Movie {title: ""Cloud Atlas""})
-RETURN x",8,1,false,false
+RETURN x",10,3,false,false
 List 10 Person nodes,,"MATCH (p:Person)
-RETURN p LIMIT 10",9,1,false,false
+RETURN p LIMIT 10",11,3,false,false
 List 10 Person names,,"MATCH (p:Person)
-RETURN p.name LIMIT 10",10,1,false,false
+RETURN p.name LIMIT 10",12,3,false,false
 Path to Kevin Bacon,,"MATCH (:Person {name:""Kevin Bacon""})-[r:ACTED_IN*1..6]-(n)
 ORDER BY n.name
 RETURN DISTINCT n, r
-",11,1,false,false
+",13,3,false,false
 Shortest path to Kevin Bacon,,"// MATCH path=shortestPath(
 //   (:Person {name:""Kevin Bacon""})-[r:ACTED_IN*]-(:Person {name:""Meg Ryan""})
 // )
@@ -684,44 +732,44 @@ MATCH path=shortestPath(
   (kevin:Person {name:""Kevin Bacon""})-[r:ACTED_IN*1..6]-(n)
 )
    WHERE n <> kevin
-RETURN path, length(path) / 2 as distance",12,1,false,false
-DeepLearning.AI,,,13,,true,false
-Actors & Movies,,,14,13,true,false
+RETURN path, length(path) / 2 as distance",14,3,false,false
+DeepLearning.AI,,,15,,true,false
+Actors & Movies,,,16,15,true,false
 Create Person,,"CREATE (p:Person {name:""Hailee Steinfeld"", born: 1996})
 RETURN p
 
 // MATCH (n:Person {name:""Hailee Steinfeld""})
 // RETURN n
-",15,14,false,false
+",17,16,false,false
 Create Movie,,"CREATE (m:Movie {title:""Spider-Man: Across the Spider-Verse"", released:2023, tagline:""I never found the right band to join. So I started my own... You want in?""})
-RETURN m",16,14,false,false
+RETURN m",18,16,false,false
 Delete relationship,,"MATCH (emil:Person {name:""Emil Eifrem""})-[actedIn:ACTED_IN]->(movie:Movie)
-DELETE actedIn",17,14,false,false
+DELETE actedIn",19,16,false,false
 Create relationship,,"MATCH (p:Person {name:""Hailee Steinfeld""})
 CALL (p) {
   MATCH (m:Movie {title:""Spider-Man: Across the Spider-Verse""})
   MERGE (p)-[hasRelationship:ACTED_IN]->(m)
   RETURN m, hasRelationship
 }
-RETURN p, hasRelationship, m",18,14,false,false
+RETURN p, hasRelationship, m",20,16,false,false
 Match all nodes in the graph,,"  MATCH (n) 
-  RETURN count(n)",19,14,false,false
+  RETURN count(n)",21,16,false,false
 Match all nodes in the graph (AS),,"  MATCH (n) 
-  RETURN count(n) AS numberOfNodes",20,14,false,false
+  RETURN count(n) AS numberOfNodes",22,16,false,false
 Match only the Movie nodes,,"  MATCH (m:Movie) 
-  RETURN count(m) AS numberOfMovies",21,14,false,false
+  RETURN count(m) AS numberOfMovies",23,16,false,false
 Match only the Person nodes,,"  MATCH (people:Person) 
-  RETURN count(people) AS numberOfPeople",22,14,false,false
+  RETURN count(people) AS numberOfPeople",24,16,false,false
 Pattern matching with multiple nodes,,"  MATCH (actor:Person)-[:ACTED_IN]->(movie:Movie) 
-  RETURN actor.name, movie // LIMIT 10",23,14,false,false
+  RETURN actor.name, movie // LIMIT 10",25,16,false,false
 Tom Hanks movies,,"  MATCH (tom:Person {name: ""Tom Hanks""})-[:ACTED_IN]->(tomHanksMovies:Movie) 
-  RETURN tom.name,tomHanksMovies.title",24,14,false,false
+  RETURN tom.name,tomHanksMovies.title",26,16,false,false
 Tom Hanks co-actors,,"  MATCH (tom:Person {name:""Tom Hanks""})-[:ACTED_IN]->(m)<-[:ACTED_IN]-(coActors) 
-  RETURN coActors, m",25,14,false,false
-SEC knowledge graph,,,26,13,true,false
+  RETURN coActors, m",27,16,false,false
+SEC knowledge graph,,,28,15,true,false
 Match Chunks from Forms,,"  MATCH (c:Chunk)-[r:PART_OF]->(f:Form)
     WHERE c.formId = f.formId
-  RETURN c, r, f",27,26,false,false
+  RETURN c, r, f",29,28,false,false
 Match next Chunk,,"MATCH (first:Chunk)-[:NEXT]->(nextChunk:Chunk)
   WHERE first.chunkId = '0000950170-23-027948-item1-chunk0000'
 RETURN nextChunk.chunkId as chunkId, nextChunk.text as text
@@ -731,9 +779,9 @@ RETURN nextChunk.chunkId as chunkId, nextChunk.text as text
 //   WHERE c.chunkId = '0000950170-23-027948-item1-chunk0000'
 // WITH window as longestChunkWindow
 //     ORDER BY length(window) DESC LIMIT 1
-// RETURN length(longestChunkWindow)",28,26,false,false
+// RETURN length(longestChunkWindow)",30,28,false,false
 Match investment Managers,,"MATCH (mgr:Manager)
-RETURN mgr",29,26,false,false
+RETURN mgr",31,28,false,false
 Match investment Manager to Company,,"// {
 //     ""source"": ""https://sec.gov/Archives/edgar/data/1000275/0001140361-23-039575.txt"",
 //     ""managerCik"": ""1000275"",
@@ -761,7 +809,7 @@ RETURN mgr, owns, cmp
 //         ""companyName"": ""NETAPP INC"",
 //         ""value"": ""64395000000.0"",
 //         ""shares"": ""842850""
-//     }'as investment",30,26,false,false
+//     }'as investment",32,28,false,false
 Match investment Managers to Companies,,"MATCH (mgr:Manager)-[owns:OWNS_STOCK_IN]->(cmp:Company)
 RETURN mgr, owns, cmp
-",31,26,false,false
+",33,28,false,false
