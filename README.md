@@ -135,7 +135,7 @@ cat > /root/bake-neo4j-ce.sh <<'EOF'
 # Run as root on the builder instance.
 set -euxo pipefail
 export DEBIAN_FRONTEND=noninteractive
-export NEO4J_VERSION='1:2026.09.0'   # epoch:version, as listed by apt-cache madison neo4j
+export NEO4J_VERSION='1:2025.10.1'   # epoch:version, as listed by apt-cache madison neo4j
 export NEO4J_UID=500                 # fixed uid/gid so retained data volumes stay readable across rebakes
 
 # Sets a single-valued setting in neo4j.conf: rewrites the commented or active line, or appends it.
@@ -191,7 +191,7 @@ systemctl stop neo4j || true
 rm -rf /var/lib/neo4j/data/*
 
 # 7. Static neo4j.conf settings (UserData adds the advertised addresses and the memory settings)
-set_neo4j_conf dbms.security.procedures.unrestricted 'apoc.meta.data,apoc.nodes.link'
+set_neo4j_conf dbms.security.procedures.unrestricted 'apoc.meta.data,apoc.nodes.link,spatial.*'
 set_neo4j_conf server.default_listen_address 0.0.0.0
 set_neo4j_conf server.bolt.listen_address 0.0.0.0:7687
 set_neo4j_conf server.http.listen_address 0.0.0.0:7474
@@ -206,9 +206,19 @@ for jar in /var/lib/neo4j/products/neo4j-genai-plugin-*.jar; do
   cp "$jar" /var/lib/neo4j/plugins/
   chown neo4j:neo4j "/var/lib/neo4j/plugins/$(basename "$jar")"
 done
-# Only procedures and functions matching the allowlist load, so it must name APOC and both GenAI
-# namespaces: genai.* (the deprecated functions) and ai.* (their replacements)
-set_neo4j_conf dbms.security.procedures.allowlist 'apoc.*,genai.*,ai.*'
+# Neo4j Spatial does not ship with the package; download the pinned release (built for Neo4j 2025.10)
+# and check its hash
+SPATIAL_VERSION=2025.10.0
+SPATIAL_SHA256=83c9d31deebcc5a951f11832ffbc58692a2795a461baba480efe74cafbeeff6b
+SPATIAL_JAR="neo4j-spatial-server-plugin-${SPATIAL_VERSION}-with-dependencies.jar"
+curl -fsSL -o "/var/lib/neo4j/plugins/${SPATIAL_JAR}" \
+  "https://github.com/neo4j-contrib/spatial/releases/download/${SPATIAL_VERSION}/${SPATIAL_JAR}"
+echo "${SPATIAL_SHA256}  /var/lib/neo4j/plugins/${SPATIAL_JAR}" | sha256sum -c - || \
+  { echo "ERROR: Neo4j Spatial jar checksum mismatch"; exit 1; }
+chown neo4j:neo4j "/var/lib/neo4j/plugins/${SPATIAL_JAR}"
+# Only procedures and functions matching the allowlist load, so it must name APOC, both GenAI
+# namespaces (genai.* for the deprecated functions, ai.* for their replacements) and spatial.*
+set_neo4j_conf dbms.security.procedures.allowlist 'apoc.*,genai.*,ai.*,spatial.*'
 grep -n -E '^dbms\.security\.procedures\.' /etc/neo4j/neo4j.conf || true
 # No server.jvm.additional edits: the package already ships the JDK vector API and native-access
 # options as active lines. No restart either: Neo4j must not start before step 10 sets the
@@ -219,7 +229,8 @@ mkdir -p /etc/systemd/system/neo4j.service.d
 printf '[Unit]\nRequiresMountsFor=/var/lib/neo4j/data\n\n[Service]\nLimitNOFILE=60000\n' > /etc/systemd/system/neo4j.service.d/override.conf
 systemctl daemon-reload
 
-# 10. Smoke test Java + Neo4j + APOC with a throwaway password
+# 10. Smoke test Java + Neo4j + APOC + GenAI + Spatial with a throwaway password
+#     (any failing cypher-shell call aborts the bake under set -e)
 neo4j-admin dbms set-initial-password 'bake-smoke-test-1'
 chown -R neo4j:neo4j /var/lib/neo4j/data
 systemctl start neo4j
@@ -230,6 +241,17 @@ done
 cypher-shell -a bolt://localhost:7687 -u neo4j -p 'bake-smoke-test-1' \
   'CALL dbms.components() YIELD name, versions, edition RETURN name, versions, edition;'
 cypher-shell -a bolt://localhost:7687 -u neo4j -p 'bake-smoke-test-1' 'RETURN apoc.version() AS apoc;'
+cypher-shell -a bolt://localhost:7687 -u neo4j -p 'bake-smoke-test-1' \
+  "SHOW FUNCTIONS YIELD name WHERE name STARTS WITH 'ai.' OR name STARTS WITH 'genai.' RETURN name;"
+cypher-shell -a bolt://localhost:7687 -u neo4j -p 'bake-smoke-test-1' \
+  "SHOW PROCEDURES YIELD name WHERE name STARTS WITH 'spatial.' RETURN count(*) AS spatial_procedures;"
+cypher-shell -a bolt://localhost:7687 -u neo4j -p 'bake-smoke-test-1' \
+  "CALL spatial.addLayer('smoke_test', 'wkt', '') YIELD node RETURN labels(node) AS layer;"
+cypher-shell -a bolt://localhost:7687 -u neo4j -p 'bake-smoke-test-1' \
+  "CALL spatial.addWKT('smoke_test', 'POLYGON((-1.6 50.4, -1.4 50.4, -1.4 50.6, -1.6 50.6, -1.6 50.4))') YIELD node RETURN node;"
+SPATIAL_HITS=$(cypher-shell -a bolt://localhost:7687 -u neo4j -p 'bake-smoke-test-1' --format plain \
+  "CALL spatial.intersects('smoke_test', 'POLYGON((-2 50, -1 50, -1 51, -2 50))') YIELD node RETURN count(node) AS hits;" | tail -n 1)
+[ "$SPATIAL_HITS" = "1" ] || { echo "ERROR: spatial.intersects returned $SPATIAL_HITS hits, expected 1"; exit 1; }
 systemctl start redis-server
 redis-cli ping
 
